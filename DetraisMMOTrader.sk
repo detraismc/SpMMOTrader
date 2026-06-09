@@ -1,0 +1,255 @@
+import:
+	net.Indyuce.mmoitems.MMOItems
+
+on load:
+	load yaml "plugins/DetraisMMOTrader/config.yml" as "dmmot_config"
+	load yaml "plugins/DetraisMMOTrader/gui.yml" as "dmmot_gui"
+	set {_list::*} to yaml list "module-list" from "dmmot_config"
+	loop {_list::*}:
+		load yaml "plugins/DetraisMMOTrader/module/%loop-value%.yml" as "dmmot_module_%loop-value%"
+	
+command /openmmotrader [<player>] [<text>]:
+	aliases: mmotrader
+	permission: mixrpg.openstore
+	trigger:
+		if arg-2 is not set:
+			send getDMMOTText("error-mmotrader")
+			stop
+		set {_list::*} to yaml list "module-list" from "dmmot_config"
+		if {_list::*} contains arg-2:
+			openMMOTrader(arg-1, arg-2, 1)
+		else:
+			send getDMMOTText("error-mmotrader-module")
+			
+command /mmotraderreload:
+	permission: mixrpg.storeadmin
+	trigger:
+		load yaml "plugins/DetraisMMOTrader/config.yml" as "dmmot_config"
+		load yaml "plugins/DetraisMMOTrader/gui.yml" as "dmmot_gui"
+		set {_list::*} to yaml list "module-list" from "dmmot_config"
+		loop {_list::*}:
+			load yaml "plugins/DetraisMMOTrader/module/%loop-value%.yml" as "dmmot_module_%loop-value%"
+		send getDMMOTText("message-reload")
+			
+			
+on inventory click:
+	if {playergui::%player%::guitype} is not "mmotrader-open":
+		stop
+	if {playergui::%player%::guiname} is name of event-inventory:
+		cancel event
+		if type of event-inventory is player inventory:
+			stop
+		if event-slot is air:
+			stop
+		set {_page} to {playergui::%player%::page}
+		set {_module} to {playergui::%player%::module}
+		set {_yml} to "dmmot_module_%{_module}%"
+		set {_gui::*} to yaml list "item-slots" from {_yml}
+		set {_nextPageSlot} to yaml value "item-next-slot" from {_yml}
+		set {_prevPageSlot} to yaml value "item-prev-slot" from {_yml}
+	
+		loop yaml node keys "trader-items" from {_yml}:
+			add "%loop-key%" to {_itemlist::*}
+		
+		if index of event-slot is {_prevPageSlot}:
+			if {_page} is larger than 1:
+				play sound "ui.button.click" at volume 2 at pitch 1.0 to player
+				openMMOTrader(player, {_module}, {_page}-1)
+			stop
+		if index of event-slot is {_nextPageSlot}:
+			if size of {_itemlist::*} is larger than {_page}*size of {_gui::*}:
+				play sound "ui.button.click" at volume 2 at pitch 1.0 to player
+				openMMOTrader(player, {_module}, {_page}+1)
+			stop
+			
+			
+		if {_gui::*} contains index of event-slot:
+			if {_page} > 1:
+				set {_num} to (1*size of {_gui::*}) + 1
+			else:
+				set {_num} to 1
+				
+			loop size of {_gui::*} times:
+				if {_gui::%loop-value%} = index of event-slot:
+					set {_id} to {_itemlist::%{_num}%}
+					if mmoTraderHasItem(player, {_module}, {_id}) is false:
+						play sound "entity.villager.no" at volume 2 at pitch 1.0 to player
+						send getDMMOTText("error-mmotrader-noitem") to player
+						stop
+					mmoTraderRemoveItem(player, {_module}, {_id})
+					set {_moneyCost} to yaml value "trader-items.%{_id}%.money-cost" from {_yml}
+					if player's money < {_moneyCost}:
+						play sound "entity.villager.no" at volume 2 at pitch 1.0 to player
+						send getDMMOTText("error-mmotrader-noitem") to player
+						stop
+					subtract {_moneyCost} from player's money
+						
+					set {_commands::*} to yaml list "trader-items.%{_id}%.commands" from {_yml}
+					loop {_commands::*}:
+						set {_cmd} to loop-value-2
+						replace all "<player>" with "%player%" in {_cmd}
+						execute console command "%{_cmd}%"
+					play sound "block.note_block.pling" at volume 1 at pitch 1.0 to player
+					openMMOTrader(player, {_module}, {_page})
+					stop
+				add 1 to {_num}
+				
+		loop yaml node keys "item-custom" from {_yml}:
+			set {_slot} to yaml value "item-custom.%loop-key%.slot" from {_yml}
+			if index of event-slot is {_slot}:
+				set {_cmd::*} to yaml list "item-custom.%loop-key%.commands" from {_yml}
+				loop {_cmd::*}:
+					set {_cmdprep} to loop-value-2
+					replace all "<player>" with "%player%" in {_cmdprep}
+					execute console command "%{_cmdprep}%"
+				if size of {_cmd::*} > 0:
+					play sound "ui.button.click" at volume 2 at pitch 1.0 to player
+				stop
+			
+function openMMOTrader(p: player, module: string, page: number):
+	set {playergui::%{_p}%::cooldown} to now
+	set {_yml} to "dmmot_module_%{_module}%"
+	set {_metadata} to yaml value "gui-name" from {_yml}
+	set {_rows} to yaml value "gui-rows" from {_yml}
+	set (metadata tag {_metadata} of {_p}) to chest inventory with {_rows} rows named {_metadata}
+	set {_pane1::*} to yaml list "pane1-slots" from "dpi_gui"
+	set {_itempane1} to yaml value "item-pane1" from "dpi_gui" parsed as item
+	set {_pane2::*} to yaml list "pane2-slots" from "dpi_gui"
+	set {_itempane2} to yaml value "item-pane2" from "dpi_gui" parsed as item
+	set {_gui::*} to yaml list "item-slots" from {_yml}
+	set {_nextPageSlot} to yaml value "item-next-slot" from {_yml}
+	set {_prevPageSlot} to yaml value "item-prev-slot" from {_yml}
+	
+	loop yaml node keys "trader-items" from {_yml}:
+		add "%loop-key%" to {_itemlist::*}
+			
+	loop {_pane1::*}:
+		set slot loop-value of (metadata tag {_metadata} of {_p}) to {_itempane1} named "&f"
+	loop {_pane2::*}:
+		set slot loop-value of (metadata tag {_metadata} of {_p}) to {_itempane2} named "&f"
+		
+	if {_page} > 1:
+		set {_num} to (({_page}-1)*size of {_gui::*}) + 1
+	else:
+		set {_num} to 1
+		
+	loop {_gui::*}:
+		if {_itemlist::%{_num}%} is set:
+			set slot loop-value of (metadata tag {_metadata} of {_p}) to getMMOTraderItemGUI({_p}, {_module}, {_itemlist::%{_num}%})
+			add 1 to {_num}
+
+	if {_page} > 1:
+		set slot {_prevPageSlot} of (metadata tag {_metadata} of {_p}) to getYamlGUIItem2("dmmot_gui", "item-page.prev")
+	if size of {_itemlist::*} is larger than {_page}*size of {_gui::*}:
+		set slot {_nextPageSlot} of (metadata tag {_metadata} of {_p}) to getYamlGUIItem2("dmmot_gui", "item-page.next")
+	
+	loop yaml node keys "item-custom" from {_yml}:
+		set {_slot} to yaml value "item-custom.%loop-key%.slot" from {_yml}
+		set slot {_slot} of (metadata tag {_metadata} of {_p}) to getYamlGUIItem2({_yml}, "item-custom.%loop-key%")
+		
+	
+	open (metadata tag {_metadata} of {_p}) to {_p}
+	set {playergui::%{_p}%::page} to {_page}
+	set {playergui::%{_p}%::guiname} to {_metadata}
+	set {playergui::%{_p}%::module} to {_module}
+	set {playergui::%{_p}%::guitype} to "mmotrader-open"
+			
+			
+			
+			
+			
+			
+			
+			
+			
+function getDMMOTText(node: string):: string:
+	set {_prefix} to yaml value "prefix" from "dmmot_config"
+	set {_text} to yaml value "%{_node}%" from "dmmot_config"
+	return "%{_prefix}%%{_text}%"
+	
+function getMMOTraderItemGUI(p: player, module: string, traderItem: string) :: item:
+	set {_yml} to "dmmot_module_%{_module}%"
+
+	set {_material} to yaml value "trader-items.%{_traderItem}%.item" from {_yml}
+	set {_amount} to yaml value "trader-items.%{_traderItem}%.amount" from {_yml}
+
+	if {_material} is "MMOITEMS":
+		set {_mmoDisplayType} to yaml value "trader-items.%{_traderItem}%.mmo-display.mmoitems-type" from {_yml}
+		set {_mmoDisplayId} to yaml value "trader-items.%{_traderItem}%.mmo-display.mmoitems-id" from {_yml}
+		set {_mmoDisplay} to MMOItems.plugin.getItem({_mmoDisplayType}, {_mmoDisplayId})
+		set {_lore::*} to yaml list "trader-items.%{_traderItem}%.lore" from {_yml}
+		set {_loreChange} to join {_lore::*} with ";"
+		set {_mmoDisplayLore} to join lore of {_mmoDisplay} with ";"
+		replace all "<mmoitems-lore>" with "%{_mmoDisplayLore}%" in {_loreChange}
+	else:
+		set {_display} to yaml value "trader-items.%{_traderItem}%.name" from {_yml}
+		set {_lore::*} to yaml list "trader-items.%{_traderItem}%.lore" from {_yml}
+		set {_loreChange} to join {_lore::*} with ";"
+		set {_modeldata} to yaml value "trader-items.%{_traderItem}%.modeldata" from {_yml}
+		if {_material} is "PLAYER_HEAD":
+			set {_value} to yaml value "trader-items.%{_traderItem}%.skullvalue" from {_yml}
+			set {_item} to getCustomSkull("", {_value})
+		else:
+			if {_material} is set:
+				set {_item} to {_material} parsed as item
+			else:
+				return stone
+
+	set {_moneyCost} to yaml value "trader-items.%{_traderItem}%.money-cost" from {_yml}
+	replace all "<money-cost>" with spacedNum({_moneyCost}) in {_loreChange}
+	
+	loop yaml node keys "trader-items.%{_traderItem}%.mmo-cost" from {_yml}:
+		set {_mmoCostDisplay} to yaml value "trader-items.%{_traderItem}%.mmo-cost-display" from {_yml}
+		set {_mmoitemsType} to yaml value "trader-items.%{_traderItem}%.mmo-cost.%loop-key%.mmoitems-type" from {_yml}
+		set {_mmoitemsId} to yaml value "trader-items.%{_traderItem}%.mmo-cost.%loop-key%.mmoitems-id" from {_yml}
+		set {_mmoitem} to MMOItems.plugin.getItem({_mmoitemsType}, {_mmoitemsId})
+		set {_amount} to yaml value "trader-items.%{_traderItem}%.mmo-cost.%loop-key%.amount" from {_yml}
+		replace all "<amount>" with "%{_amount}%" in {_mmoCostDisplay}
+		replace all "<item>" with name of {_mmoitem} in {_mmoCostDisplay}
+		add {_mmoCostDisplay} to {_mmoCostList::*}
+		
+	if {_mmoCostList::*} is set:
+		set {_mmoCost} to join {_mmoCostList::*} with ";"
+		replace all "<mmo-cost>" with "%{_mmoCost}%" in {_loreChange}
+	
+	set {_lore2::*} to split {_loreChange} at ";"
+	
+
+	if {_material} is "MMOITEMS":
+		set {_returnitem} to {_amount} of {_mmoDisplay} with lore colored {_lore2::*}
+	else:
+		set {_enchanted} to yaml value "trader-items.%{_traderItem}%.enchanted" from {_yml}
+		if {_enchanted} is true:
+			set {_returnitem} to {_amount} of {_item} named colored {_display} with custom model data {_modeldata} with lore colored {_lore2::*} with enchantment glint
+		else:
+			set {_returnitem} to {_amount} of {_item} named colored {_display} with custom model data {_modeldata} with lore colored {_lore2::*} without enchantment glint
+	return {_returnitem}
+		
+		
+		
+		
+function mmoTraderHasItem(p: player, module: string, id: string):: boolean:
+	set {_yml} to "dmmot_module_%{_module}%"
+	set {_var} to true
+	loop yaml node keys "trader-items.%{_id}%.mmo-cost" from {_yml}:
+		set {_mmoitemsType} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.mmoitems-type" from {_yml}
+		set {_mmoitemsId} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.mmoitems-id" from {_yml}
+		set {_mmoitem} to MMOItems.plugin.getItem({_mmoitemsType}, {_mmoitemsId})
+		set {_amount} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.amount" from {_yml}
+		if {_p} doesn't have {_amount} of {_mmoitem}:
+			return false
+	return true
+	
+function mmoTraderRemoveItem(p: player, module: string, id: string):
+	set {_yml} to "dmmot_module_%{_module}%"
+	set {_var} to true
+	loop yaml node keys "trader-items.%{_id}%.mmo-cost" from {_yml}:
+		set {_mmoitemsType} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.mmoitems-type" from {_yml}
+		set {_mmoitemsId} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.mmoitems-id" from {_yml}
+		set {_mmoitem} to MMOItems.plugin.getItem({_mmoitemsType}, {_mmoitemsId})
+		set {_amount} to yaml value "trader-items.%{_id}%.mmo-cost.%loop-key%.amount" from {_yml}
+		remove {_amount} of {_mmoitem} from {_p}
+		set {_text} to yaml value "message-mmotrader-removeitem" from "dmmot_config"
+		replace all "<amount>" with "%{_amount}%" in {_text}
+		replace all "<item>" with name of {_mmoitem} in {_text}
+		send {_text} to {_p}

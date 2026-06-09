@@ -1,0 +1,29 @@
+#
+# MMOTrader by DetraisMC
+#
+# The reload command for all trader yml is /mmotraderreload
+#
+
+prefix: '&6&lMMO Trader &7>> '
+message-reload: '&aMMOTrader has been reloaded'
+
+error-mmotrader: '&cUsage: /openmmotrader [module] [player]'
+error-mmotrader-module: '&cModule not found'
+error-mmotrader-noitem: '&cYou dont have the required'
+
+message-mmotrader-removeitem: '&c- &f{amount}x {item}'
+message-mmotrader-money: '&c- &f{money_cost}'
+
+sound-buy: 'BLOCK_NOTE_BLOCK_PLING'
+sound-buy-volume: 1.0
+sound-buy-pitch: 1.0
+
+sound-error: 'ENTITY_VILLAGER_NO'
+sound-error-volume: 2.0
+sound-error-pitch: 1.0
+
+sound-click: 'UI_BUTTON_CLICK'
+sound-click-volume: 2.0
+sound-click-pitch: 1.0
+
+cooldown: 200

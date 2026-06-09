@@ -1,0 +1,24 @@
+name: SpMMOTrader
+author: DetraisMC
+description: Easily created gui for buy mmoitems item using money
+version: 1.0.0
+main: me.detraismc.spmmotrader.SpMMOTrader
+api-version: 1.21
+softdepend: [MMOItems, Vault]
+
+commands:
+  openmmotrader:
+    description: Open a MMOTrader module
+    aliases: [mmotrader]
+    permission: mixrpg.openstore
+  mmotraderreload:
+    description: Reload all MMOTrader configurations
+    permission: mixrpg.storeadmin
+
+permissions:
+  mixrpg.openstore:
+    description: Allows using /openmmotrader
+    default: true
+  mixrpg.storeadmin:
+    description: Allows using /mmotraderreload
+    default: op
