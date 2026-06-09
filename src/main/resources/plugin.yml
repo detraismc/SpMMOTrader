@@ -10,15 +10,12 @@ commands:
   openmmotrader:
     description: Open a MMOTrader module
     aliases: [mmotrader]
-    permission: mixrpg.openstore
+    permission: mmotrader.admin
   mmotraderreload:
     description: Reload all MMOTrader configurations
-    permission: mixrpg.storeadmin
+    permission: mmotrader.admin
 
 permissions:
-  mixrpg.openstore:
-    description: Allows using /openmmotrader
-    default: true
-  mixrpg.storeadmin:
-    description: Allows using /mmotraderreload
+  mmotrader.admin:
+    description: Allows using all MMOTrader commands
     default: op

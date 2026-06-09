@@ -16,8 +16,8 @@ A GUI-based trading plugin for MMOItems. Players can browse paginated shops and 
 
 | Command | Permission | Description |
 |---------|-----------|-------------|
-| `/openmmotrader <module> [player]` | `mixrpg.openstore` | Open a trader module |
-| `/mmotraderreload` | `mixrpg.storeadmin` | Reload all configurations |
+| `/openmmotrader <module> [player]` | `mmotrader.admin` | Open a trader module |
+| `/mmotraderreload` | `mmotrader.admin` | Reload all configurations |
 
 ## Configuration
 
