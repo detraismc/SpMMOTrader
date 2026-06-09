@@ -1,27 +1,32 @@
-# SpContentQuests
+# SpMMOTrader
 
-A Minecraft quest plugin inspired by FTB Quests. Guides players through server content with tiered quests, objectives, rewards, and a custom GUI.
+A GUI-based trading plugin for MMOItems. Players can browse paginated shops and purchase items using money (Vault) and/or MMOItems as currency.
 
 ## Features
 
-- Quest categories with their own GUI
-- 14+ objective types (break, craft, kill, etc.) + plugin integrations
-- Quest requirements (quest completion, permissions, PlaceholderAPI)
-- Fully customizable GUI with sounds, titles, and custom items
-- Reward system with console/player commands
-- SQLite & MySQL database
-- Integrations: MMOItems, ItemsAdder, MythicMobs, Slimefun, PlaceholderAPI
+- Fully customizable GUI shops via YAML configuration
+- Paginated item browsing with next/previous buttons
+- Pay with money (Vault economy) and/or MMOItems
+- Display MMOItems directly in the shop with their lore
+- Custom clickable items in the GUI (e.g., go back, open other menus)
+- All sounds, messages, and cooldown configurable in `config.yml`
+- Auto-detect modules — just drop a `.yml` file in the `module/` folder
 
-## Quick Start
+## Commands
 
-1. Place `SpContentQuests.jar` in `plugins/`
-2. Restart server
-3. Configure categories in `plugins/SpContentQuests/category/` and quests in `plugins/SpContentQuests/quests/`
-4. Use `/questbook` or `/spcontentquests open <category>`
+| Command | Permission | Description |
+|---------|-----------|-------------|
+| `/openmmotrader <module> [player]` | `mixrpg.openstore` | Open a trader module |
+| `/mmotraderreload` | `mixrpg.storeadmin` | Reload all configurations |
 
-## 📖 [Full Wiki](https://github.com/detraismc/SpContentQuests/wiki)
+## Configuration
 
-Detailed documentation for everything — configuration, categories, quests, objective types, commands, integrations, and more.
+Place module files in `plugins/SpMMOTrader/module/`. Each file defines a shop with items, costs, and GUI layout.
+
+## Dependencies
+
+- **MMOItems** (soft) — required for MMOItems item display and currency
+- **Vault** (soft) — required for economy (money) payments
 
 ## Building
 
@@ -30,9 +35,3 @@ Requirements: Java 21+, Maven
 ```bash
 mvn clean package
 ```
-
-The jar will be in `target/`.
-
-## License
-
-Open-source. Feel free to contribute, fork, or modify.
