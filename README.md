@@ -1,6 +1,6 @@
 # SpMMOTrader
 
-A GUI-based trading plugin for MMOItems. Players can browse paginated shops and purchase items using money (Vault) and/or MMOItems as currency.
+Easily create MMOItems trader GUIs with a simple YAML configuration.
 
 ## Features
 
